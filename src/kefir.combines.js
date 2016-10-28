@@ -1,8 +1,8 @@
-import * as Kefir from "kefir"
-import * as R     from "ramda"
+import {Observable, Property} from "kefir"
+import {curryN, equals}       from "ramda"
 
 function forEach(template, fn) {
-  if (template instanceof Kefir.Observable) {
+  if (template instanceof Observable) {
     fn(template)
   } else {
     const constructor = template && template.constructor
@@ -16,10 +16,36 @@ function forEach(template, fn) {
   }
 }
 
+function countArray(template) {
+  let c = 0
+  for (let i=0, n=template.length; i<n; ++i)
+    c += count(template[i])
+  return c
+}
+
+function countObject(template) {
+  let c = 0
+  for (const k in template)
+    c += count(template[k])
+  return c
+}
+
+function countTemplate(template) {
+  if (template) {
+    const constructor = template.constructor
+    if (constructor === Array)
+      return countArray(template)
+    if (constructor === Object)
+      return countObject(template)
+  }
+  return 0
+}
+
 function count(template) {
-  let count = 0
-  forEach(template, () => count += 1)
-  return count
+  if (template instanceof Observable)
+    return 1
+  else
+    return countTemplate(template)
 }
 
 function subscribe(template, handlers, self) {
@@ -42,7 +68,7 @@ function unsubscribe(template, handlers) {
 }
 
 function combine(template, values, state) {
-  if (template instanceof Kefir.Observable) {
+  if (template instanceof Observable) {
     return values[++state.index]
   } else {
     const constructor = template && template.constructor
@@ -78,14 +104,14 @@ function invoke(xs) {
 //
 
 function Combine() {
-  Kefir.Property.call(this)
+  Property.call(this)
 }
 
-Combine.prototype = Object.create(Kefir.Property.prototype)
+Combine.prototype = Object.create(Property.prototype)
 
 Combine.prototype._maybeEmitValue = function (next) {
   const prev = this._currentEvent
-  if (!prev || !R.equals(prev.value, next))
+  if (!prev || !equals(prev.value, next))
     this._emitValue(next)
 }
 
@@ -227,12 +253,34 @@ CombineOneWith.prototype._onDeactivation = function () {
 
 //
 
-export default (...template) => {
-  const n = count(template)
+export const lift1 = fn => x => {
+  if (x instanceof Observable)
+    return new CombineOneWith(x, fn)
+  const n = countTemplate(x)
+  if (0 === n)
+    return fn(x)
+  if (1 === n)
+    return new CombineOne([x, fn])
+  return new CombineMany([x, fn], n)
+}
+
+export const lift = fn => curryN(fn.length, (...xs) => {
+  if (1 === xs.length)
+    return lift1(fn)(xs[0])
+  const n = countArray(xs)
+  if (0 === n)
+    return fn(...xs)
+  if (1 === n)
+    new CombineOne([...xs, fn])
+  return new CombineMany([...xs, fn], n)
+})
+
+export default function (...template) {
+  const n = countArray(template)
   switch (n) {
     case 0: return invoke(template)
     case 1: return (template.length === 2 &&
-                    template[0] instanceof Kefir.Observable &&
+                    template[0] instanceof Observable &&
                     template[1] instanceof Function
                     ? new CombineOneWith(template[0], template[1])
                     : new CombineOne(template))

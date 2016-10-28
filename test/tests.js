@@ -1,7 +1,7 @@
 import * as Kefir from "kefir"
 import * as R     from "ramda"
 
-import K from "../src/kefir.combines"
+import K, * as C  from "../src/kefir.combines"
 
 function show(x) {
   switch (typeof x) {
@@ -14,7 +14,8 @@ function show(x) {
 }
 
 const testEq = (expr, expect) => it(`${expr} => ${show(expect)}`, done => {
-  const actual = eval(`(K, Kefir, R) => ${expr}`)(K, Kefir, R)
+  const actual = eval(`(C, K, Kefir, R) => ${expr}`)(
+                        C, K, Kefir, R)
   const check = actual => {
     if (!R.equals(actual, expect))
       throw new Error(`Expected: ${show(expect)}, actual: ${show(actual)}`)
@@ -46,4 +47,19 @@ describe("K", () => {
   testEq('K(Kefir.constantError("e"))', "e")
   testEq('K(Kefir.constantError("e"), x => x + x)', "e")
   testEq('K(Kefir.constant("f"), Kefir.constantError("e"))', "e")
+})
+
+describe("lift1", () => {
+  testEq('C.lift1(R.add(1))(2)', 3)
+  testEq('C.lift1(R.add(1))(Kefir.constant(2))', 3)
+  testEq('C.lift1(R.map(R.add(1)))([1,Kefir.constant(2),3])', [2,3,4])
+  testEq('C.lift1(R.map(R.add(1)))([Kefir.constant(1),2,Kefir.constant(3)])', [2,3,4])
+})
+
+describe("lift", () => {
+  testEq('C.lift(R.add(1))(2)', 3)
+  testEq('C.lift(R.add)(2, 3)', 5)
+  testEq('C.lift(R.add)(2)(Kefir.constant(3))', 5)
+  testEq('C.lift(R.add)(Kefir.constant(3), 2)', 5)
+  testEq('C.lift(R.map)(Kefir.constant(R.add(1)), [Kefir.constant(1),2,Kefir.constant(3)])', [2,3,4])
 })
