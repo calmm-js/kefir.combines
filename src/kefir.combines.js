@@ -253,6 +253,9 @@ CombineOneWith.prototype._onDeactivation = function () {
 
 //
 
+export const lift1Shallow = fn => x =>
+  x instanceof Observable ? new CombineOneWith(x, fn) : fn(x)
+
 export const lift1 = fn => x => {
   if (x instanceof Observable)
     return new CombineOneWith(x, fn)
