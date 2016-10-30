@@ -36,10 +36,11 @@ describe("K", () => {
   testEq('K("a", "b")', ["a", "b"])
   testEq('K("a", Kefir.constant("b"))', ["a", "b"])
   testEq('K(Kefir.constant("a"), "b")', ["a", "b"])
-  testEq('K(Kefir.constant("a"), Kefir.constant("b"))', ["a", "b"])
+  testEq('K(Kefir.later(10,"a"), Kefir.later(2,"b"))', ["a", "b"])
 
   testEq('K("a", x => x + x)', "aa")
   testEq('K(Kefir.constant("a"), x => x + x)', "aa")
+  testEq('K(Kefir.later(1,"a"), x => x + x)', "aa")
   testEq('K(Kefir.constant("a"), Kefir.constant(x => x + x))', "aa")
 
   testEq('K([1, {y: {z: Kefir.constant("x")}}, Kefir.constant(3)], R.prepend(4))', [4, 1, {y: {z: "x"}}, 3])
