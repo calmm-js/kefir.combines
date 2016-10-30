@@ -1,5 +1,12 @@
 import {Observable, Property} from "kefir"
-import {curryN, equals}       from "ramda"
+import {curryN}               from "ramda"
+
+//
+
+const identical = (a, b) =>
+  a === b && (a !== 0 || 1 / a === 1 / b) || a !== a && b !== b
+
+//
 
 function forEach(template, fn) {
   if (template instanceof Observable) {
@@ -110,7 +117,7 @@ Combine.prototype = Object.create(Property.prototype)
 
 Combine.prototype._maybeEmitValue = function (next) {
   const prev = this._currentEvent
-  if (!prev || !equals(prev.value, next))
+  if (!prev || !identical(prev.value, next))
     this._emitValue(next)
 }
 
