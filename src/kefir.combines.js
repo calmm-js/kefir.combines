@@ -51,9 +51,8 @@ function count(template) {
 function subscribe(template, handlers, self) {
   let index = -1
   forEach(template, observable => {
-    const i = ++index
-    const handler = e => self._handleAny(i, e)
-    handlers[i] = handler
+    const handler = e => self._handleAny(handler, e)
+    handlers[++index] = handler
     observable.onAny(handler)
   })
 }
@@ -140,7 +139,11 @@ CombineMany.prototype._onActivation = function () {
   subscribe(template, handlers, this)
 }
 
-CombineMany.prototype._handleAny = function (i, e) {
+CombineMany.prototype._handleAny = function (handler, e) {
+  const handlers = this._handlers
+  let i=0
+  while (handlers[i] !== handler)
+    ++i
   switch (e.type) {
     case "value": {
       const values = this._values
@@ -156,7 +159,6 @@ CombineMany.prototype._handleAny = function (i, e) {
       break
     }
     default: {
-      const handlers = this._handlers
       handlers[i] = null
       for (let j=0, n=handlers.length; j<n; ++j)
         if (handlers[j])
