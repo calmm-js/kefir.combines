@@ -25,7 +25,7 @@ and [`skipDuplicates`](http://rpominov.github.io/kefir/#skip-duplicates) come
 from Kefir and [`identical`](http://ramdajs.com/docs/#identical)
 from [Ramda](http://ramdajs.com/).  Duplicates are skipped, because that can
 reduce unnecessary updates.  Ramda's `identical` provides a semantics of
-equality that works well within the context embedding properties to VDOM.
+equality that works well within the context of embedding properties to VDOM.
 
 Unlike with [`combine`](http://rpominov.github.io/kefir/#combine), any argument
 of `K` is allowed to be
