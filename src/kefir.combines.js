@@ -1,10 +1,5 @@
 import {Observable, Property} from "kefir"
-import {curryN}               from "ramda"
-
-//
-
-const identical = (a, b) =>
-  a === b && (a !== 0 || 1 / a === 1 / b) || a !== a && b !== b
+import * as I                 from "infestines"
 
 //
 
@@ -117,7 +112,7 @@ Combine.prototype = Object.create(Property.prototype)
 
 Combine.prototype._maybeEmitValue = function (next) {
   const prev = this._currentEvent
-  if (!prev || !identical(prev.value, next))
+  if (!prev || !I.identicalU(prev.value, next))
     this._emitValue(next)
 }
 
@@ -276,7 +271,7 @@ export const lift1 = fn => x => {
   return new CombineMany([x, fn], n)
 }
 
-export const lift = fn => curryN(fn.length, (...xs) => {
+export const lift = fn => I.curryN(fn.length, (...xs) => {
   if (1 === xs.length)
     return lift1(fn)(xs[0])
   const n = countArray(xs)

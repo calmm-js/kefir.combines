@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.0.0
+
+Switched to using `infestines` instead of `ramda`.  This means that the `lift`
+function has now faster, but also much more limited currying support.  Note that
+you can implement `lift` with Ramda's currying with a 1-liner:
+
+```js
+const lift = fn => R.curryN(fn.length, (...xs) => K(...xs, fn))
+```
+
 ## 2.0.0
 
 Previously duplicates were skipped with Ramda's `equals`.  This is ideal in the
