@@ -1,5 +1,5 @@
 import {Observable, Property} from "kefir"
-import {curryN, identicalU} from "infestines"
+import {arityN, identicalU} from "infestines"
 
 //
 
@@ -271,7 +271,7 @@ export const lift1 = fn => x => {
   return new CombineMany([x, fn], n)
 }
 
-export const lift = fn => curryN(fn.length, (...xs) => {
+export const lift = fn => arityN(fn.length, (...xs) => {
   if (1 === xs.length)
     return lift1(fn)(xs[0])
   const n = countArray(xs)
