@@ -1,0 +1,15 @@
+{
+  "name": "kefir.combines",
+  "description": "Special purpose applicative Kefir combinator",
+  "main": "dist/kefir.combines.js",
+  "license": "MIT",
+  "keywords": [
+    "kefir"
+  ],
+  "homepage": "https://github.com/calmm-js/kefir.combines",
+  "dependencies": {
+    "infestines": "^0.3.4",
+    "kefir": "^3.2.1"
+  },
+  "ignore": ["*", "!*.md", "!dist/*"]
+}
