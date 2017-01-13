@@ -271,16 +271,25 @@ export const lift1 = fn => x => {
   return new CombineMany([x, fn], n)
 }
 
-export const lift = fn => arityN(fn.length, (...xs) => {
-  if (1 === xs.length)
-    return lift1(fn)(xs[0])
-  const n = countArray(xs)
-  if (0 === n)
-    return fn(...xs)
-  if (1 === n)
-    new CombineOne([...xs, fn])
-  return new CombineMany([...xs, fn], n)
-})
+export function lift(fn) {
+  const fnN = fn.length
+  switch (fnN) {
+    case 0: return fn
+    case 1: return lift1(fn)
+    default: return arityN(fnN, function () {
+      const xsN = arguments.length, xs = Array(xsN)
+      for (let i=0; i<xsN; ++i)
+        xs[i] = arguments[i]
+      const n = countArray(xs)
+      if (0 === n)
+        return fn.apply(null, xs)
+      xs.push(fn)
+      if (1 === n)
+        new CombineOne(xs)
+      return new CombineMany(xs, n)
+    })
+  }
+}
 
 export default function (...template) {
   const n = countArray(template)
