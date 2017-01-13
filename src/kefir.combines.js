@@ -1,5 +1,5 @@
 import {Observable, Property} from "kefir"
-import {arityN, identicalU} from "infestines"
+import {arityN, identicalU, inherit} from "infestines"
 
 //
 
@@ -108,13 +108,13 @@ function Combine() {
   Property.call(this)
 }
 
-Combine.prototype = Object.create(Property.prototype)
-
-Combine.prototype._maybeEmitValue = function (next) {
-  const prev = this._currentEvent
-  if (!prev || !identicalU(prev.value, next))
-    this._emitValue(next)
-}
+inherit(Combine, Property, {
+  _maybeEmitValue(next) {
+    const prev = this._currentEvent
+    if (!prev || !identicalU(prev.value, next))
+      this._emitValue(next)
+  }
+})
 
 //
 
@@ -125,60 +125,58 @@ function CombineMany(template, n) {
   this._values = null
 }
 
-CombineMany.prototype = Object.create(Combine.prototype)
-
-CombineMany.prototype._onActivation = function () {
-  const template = this._template
-  const n = this._handlers
-  const handlers = Array(n)
-  const values = Array(n)
-  for (let i=0; i<n; ++i) {
-    values[i] = this
-    handlers[i] = this
+inherit(CombineMany, Combine, {
+  _onActivation() {
+    const template = this._template
+    const n = this._handlers
+    const handlers = Array(n)
+    const values = Array(n)
+    for (let i=0; i<n; ++i) {
+      values[i] = this
+      handlers[i] = this
+    }
+    this._handlers = handlers
+    this._values = values
+    subscribe(template, handlers, this)
+  },
+  _handleAny(handler, e) {
+    const handlers = this._handlers
+    let i=0
+    while (handlers[i] !== handler)
+      ++i
+    switch (e.type) {
+      case "value": {
+        const values = this._values
+        values[i] = e.value
+        for (let j=0, n=values.length; j<n; ++j)
+          if (values[j] === this)
+            return
+        this._maybeEmitValue(invoke(combine(this._template, values, {index: -1})))
+        break
+      }
+      case "error": {
+        this._emitError(e.value)
+        break
+      }
+      default: {
+        handlers[i] = null
+        for (let j=0, n=handlers.length; j<n; ++j)
+          if (handlers[j])
+            return
+        this._handlers = handlers.length
+        this._values = null
+        this._emitEnd()
+        break
+      }
+    }
+  },
+  _onDeactivation() {
+    const handlers = this._handlers
+    this._handlers = handlers.length
+    this._values = null
+    unsubscribe(this._template, handlers)
   }
-  this._handlers = handlers
-  this._values = values
-  subscribe(template, handlers, this)
-}
-
-CombineMany.prototype._handleAny = function (handler, e) {
-  const handlers = this._handlers
-  let i=0
-  while (handlers[i] !== handler)
-    ++i
-  switch (e.type) {
-    case "value": {
-      const values = this._values
-      values[i] = e.value
-      for (let j=0, n=values.length; j<n; ++j)
-        if (values[j] === this)
-          return
-      this._maybeEmitValue(invoke(combine(this._template, values, {index: -1})))
-      break
-    }
-    case "error": {
-      this._emitError(e.value)
-      break
-    }
-    default: {
-      handlers[i] = null
-      for (let j=0, n=handlers.length; j<n; ++j)
-        if (handlers[j])
-          return
-      this._handlers = handlers.length
-      this._values = null
-      this._emitEnd()
-      break
-    }
-  }
-}
-
-CombineMany.prototype._onDeactivation = function () {
-  const handlers = this._handlers
-  this._handlers = handlers.length
-  this._values = null
-  unsubscribe(this._template, handlers)
-}
+})
 
 //
 
@@ -188,34 +186,32 @@ function CombineOne(template) {
   this._handler = null
 }
 
-CombineOne.prototype = Object.create(Combine.prototype)
-
-CombineOne.prototype._onActivation = function () {
-  const handler = e => this._handleAny(e)
-  this._handler = handler
-  forEach(this._template, observable => observable.onAny(handler))
-}
-
-CombineOne.prototype._handleAny = function (e) {
-  switch (e.type) {
-    case "value":
-      this._maybeEmitValue(invoke(combine(this._template, [e.value], {index: -1})))
-      break
-    case "error":
-      this._emitError(e.value)
-      break
-    default:
-      this._handler = null
-      this._emitEnd()
-      break
+inherit(CombineOne, Combine, {
+  _onActivation() {
+    const handler = e => this._handleAny(e)
+    this._handler = handler
+    forEach(this._template, observable => observable.onAny(handler))
+  },
+  _handleAny(e) {
+    switch (e.type) {
+      case "value":
+        this._maybeEmitValue(invoke(combine(this._template, [e.value], {index: -1})))
+        break
+      case "error":
+        this._emitError(e.value)
+        break
+      default:
+        this._handler = null
+        this._emitEnd()
+        break
+    }
+  },
+  _onDeactivation() {
+    const {_handler} = this
+    this._handler = null
+    forEach(this._template, observable => observable.offAny(_handler))
   }
-}
-
-CombineOne.prototype._onDeactivation = function () {
-  const {_handler} = this
-  this._handler = null
-  forEach(this._template, observable => observable.offAny(_handler))
-}
+})
 
 //
 
@@ -226,34 +222,32 @@ function CombineOneWith(observable, fn) {
   this._handler = null
 }
 
-CombineOneWith.prototype = Object.create(Combine.prototype)
-
-CombineOneWith.prototype._onActivation = function () {
-  const handler = e => this._handleAny(e)
-  this._handler = handler
-  this._observable.onAny(handler)
-}
-
-CombineOneWith.prototype._handleAny = function (e) {
-  switch (e.type) {
-    case "value":
-      this._maybeEmitValue(this._fn(e.value))
-      break
-    case "error":
-      this._emitError(e.value)
-      break
-    default:
-      this._handler = null
-      this._emitEnd()
-      break
+inherit(CombineOneWith, Combine, {
+  _onActivation() {
+    const handler = e => this._handleAny(e)
+    this._handler = handler
+    this._observable.onAny(handler)
+  },
+  _handleAny(e) {
+    switch (e.type) {
+      case "value":
+        this._maybeEmitValue(this._fn(e.value))
+        break
+      case "error":
+        this._emitError(e.value)
+        break
+      default:
+        this._handler = null
+        this._emitEnd()
+        break
+    }
+  },
+  _onDeactivation() {
+    const {_handler, _observable} = this
+    this._handler = null
+    _observable.offAny(_handler)
   }
-}
-
-CombineOneWith.prototype._onDeactivation = function () {
-  const {_handler, _observable} = this
-  this._handler = null
-  _observable.offAny(_handler)
-}
+})
 
 //
 
