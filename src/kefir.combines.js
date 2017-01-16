@@ -1,21 +1,17 @@
 import {Observable, Property} from "kefir"
-import {arityN, identicalU, inherit} from "infestines"
+import {arityN, identicalU, inherit, isArray, isObject} from "infestines"
 
 //
 
 function forEach(template, fn) {
-  if (template instanceof Observable) {
+  if (template instanceof Observable)
     fn(template)
-  } else {
-    const constructor = template && template.constructor
-
-    if (constructor === Array)
-      for (let i=0, n=template.length; i<n; ++i)
-        forEach(template[i], fn)
-    else if (constructor === Object)
-      for (const k in template)
-        forEach(template[k], fn)
-  }
+  else if (isArray(template))
+    for (let i=0, n=template.length; i<n; ++i)
+      forEach(template[i], fn)
+  else if (isObject(template))
+    for (const k in template)
+      forEach(template[k], fn)
 }
 
 function countArray(template) {
@@ -33,14 +29,12 @@ function countObject(template) {
 }
 
 function countTemplate(template) {
-  if (template) {
-    const constructor = template.constructor
-    if (constructor === Array)
-      return countArray(template)
-    if (constructor === Object)
-      return countObject(template)
-  }
-  return 0
+  if (isArray(template))
+    return countArray(template)
+  else if (isObject(template))
+    return countObject(template)
+  else
+    return 0
 }
 
 function count(template) {
@@ -71,23 +65,19 @@ function unsubscribe(template, handlers) {
 function combine(template, values, state) {
   if (template instanceof Observable) {
     return values[++state.index]
+  } else if (isArray(template)) {
+    const n = template.length
+    const next = Array(n)
+    for (let i=0; i<n; ++i)
+      next[i] = combine(template[i], values, state)
+    return next
+  } else if (isObject(template)) {
+    const next = {}
+    for (const k in template)
+      next[k] = combine(template[k], values, state)
+    return next
   } else {
-    const constructor = template && template.constructor
-
-    if (constructor === Array) {
-      const n = template.length
-      const next = Array(n)
-      for (let i=0; i<n; ++i)
-        next[i] = combine(template[i], values, state)
-      return next
-    } else if (constructor === Object) {
-      const next = {}
-      for (const k in template)
-        next[k] = combine(template[k], values, state)
-      return next
-    } else {
-      return template
-    }
+    return template
   }
 }
 
