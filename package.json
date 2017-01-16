@@ -1,6 +1,6 @@
 {
   "name": "kefir.combines",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "description": "Special purpose applicative Kefir combinator",
   "main": "lib/kefir.combines.js",
   "scripts": {
@@ -44,7 +44,7 @@
     "uglifyify": "^3.0.4"
   },
   "dependencies": {
-    "infestines": "^0.3.4",
-    "kefir": "^3.2.1"
+    "infestines": "^0.4.0",
+    "kefir": "^3.7.0"
   }
 }
