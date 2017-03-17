@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.1.0
+
+Kefir was changed from a dependency to a peer dependency to avoid the
+possibility of having multiple versions of Kefir in a project.
+
 ## 3.0.0
 
 Switched to using `infestines` instead of `ramda`.  This means that the `lift`
