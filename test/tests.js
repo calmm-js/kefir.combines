@@ -13,11 +13,13 @@ function show(x) {
   }
 }
 
+const objectConstant = {x: 1}
+
 const testEq = (exprIn, expect) => {
   const expr = exprIn.replace(/[ \n]+/g, " ")
   it(`${expr} => ${show(expect)}`, done => {
-    const actual = eval(`(C, K, Kefir, R) => ${expr}`)(
-                          C, K, Kefir, R)
+    const actual = eval(`(C, K, Kefir, R, objectConstant) => ${expr}`)(
+                          C, K, Kefir, R, objectConstant)
     const check = actual => {
       if (!R.equals(actual, expect))
         throw new Error(`Expected: ${show(expect)}, actual: ${show(actual)}`)
@@ -53,6 +55,12 @@ describe("K", () => {
   testEq(`K(Kefir.constantError("e"))`, "e")
   testEq(`K(Kefir.constantError("e"), x => x + x)`, "e")
   testEq(`K(Kefir.constant("f"), Kefir.constantError("e"))`, "e")
+
+  testEq(`K(objectConstant,
+            Kefir.constant(objectConstant),
+            (o1, o2) => objectConstant === o1
+                     && objectConstant === o2)`,
+         true)
 })
 
 describe("lift1", () => {
