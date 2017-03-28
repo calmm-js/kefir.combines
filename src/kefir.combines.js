@@ -1,5 +1,12 @@
 import {Observable, Property} from "kefir"
-import {arityN, identicalU, inherit, isArray, isObject} from "infestines"
+import {
+  arityN,
+  assocPartialU,
+  identicalU,
+  inherit,
+  isArray,
+  isObject
+} from "infestines"
 
 //
 
@@ -67,14 +74,26 @@ function combine(template, values, state) {
     return values[++state.index]
   } else if (isArray(template)) {
     const n = template.length
-    const next = Array(n)
-    for (let i=0; i<n; ++i)
-      next[i] = combine(template[i], values, state)
+    let next = template
+    for (let i=0; i<n; ++i) {
+      const v = combine(template[i], values, state)
+      if (!identicalU(next[i], v)) {
+        if (next === template)
+          next = template.slice(0)
+        next[i] = v
+      }
+    }
     return next
   } else if (isObject(template)) {
-    const next = {}
-    for (const k in template)
-      next[k] = combine(template[k], values, state)
+    let next = template
+    for (const k in template) {
+      const v = combine(template[k], values, state)
+      if (!identicalU(next[k], v)) {
+        if (next === template)
+          next = assocPartialU(void 0, void 0, template) // Avoid Object.assign
+        next[k] = v
+      }
+    }
     return next
   } else {
     return template
