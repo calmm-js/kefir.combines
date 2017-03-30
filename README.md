@@ -1,6 +1,11 @@
-[![npm version](https://badge.fury.io/js/kefir.combines.svg)](http://badge.fury.io/js/kefir.combines) [![Bower version](https://badge.fury.io/bo/kefir.combines.svg)](https://badge.fury.io/bo/kefir.combines) [![Build Status](https://travis-ci.org/calmm-js/kefir.combines.svg?branch=master)](https://travis-ci.org/calmm-js/kefir.combines) [![Code Coverage](https://img.shields.io/codecov/c/github/calmm-js/kefir.combines/master.svg)](https://codecov.io/github/calmm-js/kefir.combines?branch=master) [![](https://david-dm.org/calmm-js/kefir.combines.svg)](https://david-dm.org/calmm-js/kefir.combines) [![](https://david-dm.org/calmm-js/kefir.combines/dev-status.svg)](https://david-dm.org/calmm-js/kefir.combines?type=dev)
+[![npm version](https://badge.fury.io/js/kefir.combines.svg)](http://badge.fury.io/js/kefir.combines)
+[![Bower version](https://badge.fury.io/bo/kefir.combines.svg)](https://badge.fury.io/bo/kefir.combines)
+[![Build Status](https://travis-ci.org/calmm-js/kefir.combines.svg?branch=master)](https://travis-ci.org/calmm-js/kefir.combines)
+[![Code Coverage](https://img.shields.io/codecov/c/github/calmm-js/kefir.combines/master.svg)](https://codecov.io/github/calmm-js/kefir.combines?branch=master)
+[![](https://david-dm.org/calmm-js/kefir.combines.svg)](https://david-dm.org/calmm-js/kefir.combines)
+[![](https://david-dm.org/calmm-js/kefir.combines/dev-status.svg)](https://david-dm.org/calmm-js/kefir.combines?type=dev)
 
-The default import of this library
+The default export of this library
 
 ```js
 import K from "kefir.combines"
