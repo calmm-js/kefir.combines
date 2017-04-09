@@ -71,7 +71,12 @@ describe("lift1", () => {
          [2,3,4])
 })
 
+describe("lift1Shallow", () => {
+  testEq(`C.lift1Shallow(R.add(1))(2)`, 3)
+})
+
 describe("lift", () => {
+  testEq(`C.lift(() => 42)()`, 42)
   testEq(`C.lift(R.add(1))(2)`, 3)
   testEq(`C.lift(R.add)(2, 3)`, 5)
   testEq(`C.lift(R.add)(2)(Kefir.constant(3))`, 5)
