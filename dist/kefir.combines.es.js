@@ -1,15 +1,12 @@
-(function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('kefir'), require('infestines')) :
-	typeof define === 'function' && define.amd ? define(['exports', 'kefir', 'infestines'], factory) :
-	(factory((global.kefir = global.kefir || {}, global.kefir.combines = global.kefir.combines || {}),global.kefir,global.I));
-}(this, (function (exports,kefir,infestines) { 'use strict';
+import { Observable, Property } from 'kefir';
+import { arityN, assocPartialU, identicalU, inherit, isArray, isObject } from 'infestines';
 
 //
 
 function forEach(template, fn) {
-  if (template instanceof kefir.Observable) fn(template);else if (infestines.isArray(template)) for (var i = 0, n = template.length; i < n; ++i) {
+  if (template instanceof Observable) fn(template);else if (isArray(template)) for (var i = 0, n = template.length; i < n; ++i) {
     forEach(template[i], fn);
-  } else if (infestines.isObject(template)) for (var k in template) {
+  } else if (isObject(template)) for (var k in template) {
     forEach(template[k], fn);
   }
 }
@@ -29,11 +26,11 @@ function countObject(template) {
 }
 
 function countTemplate(template) {
-  if (infestines.isArray(template)) return countArray(template);else if (infestines.isObject(template)) return countObject(template);else return 0;
+  if (isArray(template)) return countArray(template);else if (isObject(template)) return countObject(template);else return 0;
 }
 
 function count(template) {
-  if (template instanceof kefir.Observable) return 1;else return countTemplate(template);
+  if (template instanceof Observable) return 1;else return countTemplate(template);
 }
 
 function subscribe(template, handlers, self) {
@@ -56,25 +53,25 @@ function unsubscribe(template, handlers) {
 }
 
 function combine(template, values, state) {
-  if (template instanceof kefir.Observable) {
+  if (template instanceof Observable) {
     return values[++state.index];
-  } else if (infestines.isArray(template)) {
+  } else if (isArray(template)) {
     var n = template.length;
     var next = template;
     for (var i = 0; i < n; ++i) {
       var v = combine(template[i], values, state);
-      if (!infestines.identicalU(next[i], v)) {
+      if (!identicalU(next[i], v)) {
         if (next === template) next = template.slice(0);
         next[i] = v;
       }
     }
     return next;
-  } else if (infestines.isObject(template)) {
+  } else if (isObject(template)) {
     var _next = template;
     for (var k in template) {
       var _v = combine(template[k], values, state);
-      if (!infestines.identicalU(_next[k], _v)) {
-        if (_next === template) _next = infestines.assocPartialU(void 0, void 0, template); // Avoid Object.assign
+      if (!identicalU(_next[k], _v)) {
+        if (_next === template) _next = assocPartialU(void 0, void 0, template); // Avoid Object.assign
         _next[k] = _v;
       }
     }
@@ -95,13 +92,13 @@ function invoke(xs) {
 //
 
 function Combine() {
-  kefir.Property.call(this);
+  Property.call(this);
 }
 
-infestines.inherit(Combine, kefir.Property, {
+inherit(Combine, Property, {
   _maybeEmitValue: function _maybeEmitValue(next) {
     var prev = this._currentEvent;
-    if (!prev || !infestines.identicalU(prev.value, next)) this._emitValue(next);
+    if (!prev || !identicalU(prev.value, next)) this._emitValue(next);
   }
 });
 
@@ -114,7 +111,7 @@ function CombineMany(template, n) {
   this._values = null;
 }
 
-infestines.inherit(CombineMany, Combine, {
+inherit(CombineMany, Combine, {
   _onActivation: function _onActivation() {
     var template = this._template;
     var n = this._handlers;
@@ -176,7 +173,7 @@ function CombineOne(template) {
   this._handler = null;
 }
 
-infestines.inherit(CombineOne, Combine, {
+inherit(CombineOne, Combine, {
   _onActivation: function _onActivation() {
     var _this = this;
 
@@ -221,7 +218,7 @@ function CombineOneWith(observable, fn) {
   this._handler = null;
 }
 
-infestines.inherit(CombineOneWith, Combine, {
+inherit(CombineOneWith, Combine, {
   _onActivation: function _onActivation() {
     var _this2 = this;
 
@@ -258,13 +255,13 @@ infestines.inherit(CombineOneWith, Combine, {
 
 var lift1Shallow = function lift1Shallow(fn) {
   return function (x) {
-    return x instanceof kefir.Observable ? new CombineOneWith(x, fn) : fn(x);
+    return x instanceof Observable ? new CombineOneWith(x, fn) : fn(x);
   };
 };
 
 var lift1 = function lift1(fn) {
   return function (x) {
-    if (x instanceof kefir.Observable) return new CombineOneWith(x, fn);
+    if (x instanceof Observable) return new CombineOneWith(x, fn);
     var n = countTemplate(x);
     if (0 === n) return fn(x);
     if (1 === n) return new CombineOne([x, fn]);
@@ -280,7 +277,7 @@ function lift(fn) {
     case 1:
       return lift1(fn);
     default:
-      return infestines.arityN(fnN, function () {
+      return arityN(fnN, function () {
         var xsN = arguments.length,
             xs = Array(xsN);
         for (var i = 0; i < xsN; ++i) {
@@ -304,17 +301,10 @@ var kefir_combines = function () {
     case 0:
       return invoke(template);
     case 1:
-      return template.length === 2 && template[0] instanceof kefir.Observable && template[1] instanceof Function ? new CombineOneWith(template[0], template[1]) : new CombineOne(template);
+      return template.length === 2 && template[0] instanceof Observable && template[1] instanceof Function ? new CombineOneWith(template[0], template[1]) : new CombineOne(template);
     default:
       return new CombineMany(template, n);
   }
 };
 
-exports.lift1Shallow = lift1Shallow;
-exports.lift1 = lift1;
-exports.lift = lift;
-exports['default'] = kefir_combines;
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
-})));
+export { lift1Shallow, lift1, lift };export default kefir_combines;

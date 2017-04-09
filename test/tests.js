@@ -1,7 +1,7 @@
 import * as Kefir from "kefir"
 import * as R     from "ramda"
 
-import K, * as C  from "../src/kefir.combines"
+import K, * as C  from "../dist/kefir.combines.cjs"
 
 function show(x) {
   switch (typeof x) {

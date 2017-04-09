@@ -1,8 +1,9 @@
-(function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('kefir'), require('infestines')) :
-	typeof define === 'function' && define.amd ? define(['exports', 'kefir', 'infestines'], factory) :
-	(factory((global.kefir = global.kefir || {}, global.kefir.combines = global.kefir.combines || {}),global.kefir,global.I));
-}(this, (function (exports,kefir,infestines) { 'use strict';
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var kefir = require('kefir');
+var infestines = require('infestines');
 
 //
 
@@ -314,7 +315,3 @@ exports.lift1Shallow = lift1Shallow;
 exports.lift1 = lift1;
 exports.lift = lift;
 exports['default'] = kefir_combines;
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
-})));
