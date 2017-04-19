@@ -37,25 +37,6 @@ function count(template) {
   if (template instanceof kefir.Observable) return 1;else return countTemplate(template);
 }
 
-function subscribe(template, handlers, self) {
-  var index = -1;
-  forEach(template, function (observable) {
-    var handler = function handler(e) {
-      return self._handleAny(handler, e);
-    };
-    handlers[++index] = handler;
-    observable.onAny(handler);
-  });
-}
-
-function unsubscribe(template, handlers) {
-  var index = -1;
-  forEach(template, function (observable) {
-    var handler = handlers[++index];
-    if (handler) observable.offAny(handler);
-  });
-}
-
 function combine(template, values, state) {
   if (template instanceof kefir.Observable) {
     return values[++state.index];
@@ -93,31 +74,71 @@ function invoke(xs) {
   return f instanceof Function ? f.apply(void 0, xs.slice(0, nm1)) : xs;
 }
 
-//
-
-function Combine() {
-  kefir.Property.call(this);
+function subscribe(self) {
+  var index = -1;
+  forEach(self._template, function (observable) {
+    var handler = function handler(e) {
+      var handlers = self._handlers;
+      var i = 0;
+      while (handlers[i] !== handler) {
+        ++i;
+      }switch (e.type) {
+        case "value":
+          {
+            var values = self._values;
+            values[i] = e.value;
+            for (var j = 0, n = values.length; j < n; ++j) {
+              if (values[j] === self) return;
+            }var template = self._template;
+            maybeEmitValue(self, invoke(combine(template, values, { index: -1 })));
+            break;
+          }
+        case "error":
+          {
+            self._emitError(e.value);
+            break;
+          }
+        default:
+          {
+            handlers[i] = null;
+            for (var _j = 0, _n = handlers.length; _j < _n; ++_j) {
+              if (handlers[_j]) return;
+            }self._handlers = handlers.length;
+            self._values = null;
+            self._emitEnd();
+            break;
+          }
+      }
+    };
+    self._handlers[++index] = handler;
+    observable.onAny(handler);
+  });
 }
 
-infestines.inherit(Combine, kefir.Property, {
-  _maybeEmitValue: function _maybeEmitValue(next) {
-    var prev = this._currentEvent;
-    if (!prev || !infestines.identicalU(prev.value, next)) this._emitValue(next);
-  }
-});
+function unsubscribe(template, handlers) {
+  var index = -1;
+  forEach(template, function (observable) {
+    var handler = handlers[++index];
+    if (handler) observable.offAny(handler);
+  });
+}
 
 //
 
-function CombineMany(template, n) {
-  Combine.call(this);
+function maybeEmitValue(self, next) {
+  var prev = self._currentEvent;
+  if (!prev || !infestines.identicalU(prev.value, next) || prev.type !== "value") self._emitValue(next);
+}
+
+//
+
+var CombineMany = /*#__PURE__*/infestines.inherit(function CombineMany(template, n) {
+  kefir.Property.call(this);
   this._template = template;
   this._handlers = n;
   this._values = null;
-}
-
-infestines.inherit(CombineMany, Combine, {
+}, kefir.Property, {
   _onActivation: function _onActivation() {
-    var template = this._template;
     var n = this._handlers;
     var handlers = Array(n);
     var values = Array(n);
@@ -127,39 +148,7 @@ infestines.inherit(CombineMany, Combine, {
     }
     this._handlers = handlers;
     this._values = values;
-    subscribe(template, handlers, this);
-  },
-  _handleAny: function _handleAny(handler, e) {
-    var handlers = this._handlers;
-    var i = 0;
-    while (handlers[i] !== handler) {
-      ++i;
-    }switch (e.type) {
-      case "value":
-        {
-          var values = this._values;
-          values[i] = e.value;
-          for (var j = 0, n = values.length; j < n; ++j) {
-            if (values[j] === this) return;
-          }this._maybeEmitValue(invoke(combine(this._template, values, { index: -1 })));
-          break;
-        }
-      case "error":
-        {
-          this._emitError(e.value);
-          break;
-        }
-      default:
-        {
-          handlers[i] = null;
-          for (var _j = 0, _n = handlers.length; _j < _n; ++_j) {
-            if (handlers[_j]) return;
-          }this._handlers = handlers.length;
-          this._values = null;
-          this._emitEnd();
-          break;
-        }
-    }
+    subscribe(this);
   },
   _onDeactivation: function _onDeactivation() {
     var handlers = this._handlers;
@@ -171,37 +160,35 @@ infestines.inherit(CombineMany, Combine, {
 
 //
 
-function CombineOne(template) {
-  Combine.call(this);
+var CombineOne = /*#__PURE__*/infestines.inherit(function CombineOne(template) {
+  kefir.Property.call(this);
   this._template = template;
   this._handler = null;
-}
-
-infestines.inherit(CombineOne, Combine, {
+}, kefir.Property, {
   _onActivation: function _onActivation() {
     var _this = this;
 
     var handler = function handler(e) {
-      return _this._handleAny(e);
+      switch (e.type) {
+        case "value":
+          {
+            var template = _this._template;
+            maybeEmitValue(_this, invoke(combine(template, [e.value], { index: -1 })));
+            break;
+          }
+        case "error":
+          _this._emitError(e.value);
+          break;
+        default:
+          _this._handler = null;
+          _this._emitEnd();
+          break;
+      }
     };
     this._handler = handler;
     forEach(this._template, function (observable) {
       return observable.onAny(handler);
     });
-  },
-  _handleAny: function _handleAny(e) {
-    switch (e.type) {
-      case "value":
-        this._maybeEmitValue(invoke(combine(this._template, [e.value], { index: -1 })));
-        break;
-      case "error":
-        this._emitError(e.value);
-        break;
-      default:
-        this._handler = null;
-        this._emitEnd();
-        break;
-    }
   },
   _onDeactivation: function _onDeactivation() {
     var _handler = this._handler;
@@ -215,36 +202,31 @@ infestines.inherit(CombineOne, Combine, {
 
 //
 
-function CombineOneWith(observable, fn) {
-  Combine.call(this);
+var CombineOneWith = /*#__PURE__*/infestines.inherit(function CombineOneWith(observable, fn) {
+  kefir.Property.call(this);
   this._observable = observable;
   this._fn = fn;
   this._handler = null;
-}
-
-infestines.inherit(CombineOneWith, Combine, {
+}, kefir.Property, {
   _onActivation: function _onActivation() {
     var _this2 = this;
 
     var handler = function handler(e) {
-      return _this2._handleAny(e);
+      switch (e.type) {
+        case "value":
+          maybeEmitValue(_this2, (0, _this2._fn)(e.value));
+          break;
+        case "error":
+          _this2._emitError(e.value);
+          break;
+        default:
+          _this2._handler = null;
+          _this2._emitEnd();
+          break;
+      }
     };
     this._handler = handler;
     this._observable.onAny(handler);
-  },
-  _handleAny: function _handleAny(e) {
-    switch (e.type) {
-      case "value":
-        this._maybeEmitValue(this._fn(e.value));
-        break;
-      case "error":
-        this._emitError(e.value);
-        break;
-      default:
-        this._handler = null;
-        this._emitEnd();
-        break;
-    }
   },
   _onDeactivation: function _onDeactivation() {
     var _handler = this._handler,

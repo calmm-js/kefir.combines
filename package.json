@@ -1,6 +1,6 @@
 {
   "name": "kefir.combines",
-  "version": "4.1.2",
+  "version": "4.1.3",
   "description": "Special purpose applicative Kefir combinator",
   "main": "dist/kefir.combines.cjs.js",
   "module": "dist/kefir.combines.es.js",
