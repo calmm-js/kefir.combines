@@ -8,7 +8,7 @@
   ],
   "homepage": "https://github.com/calmm-js/kefir.combines",
   "dependencies": {
-    "infestines": "^0.4.0",
+    "infestines": "^0.4.4",
     "kefir": "^3.7.0"
   },
   "ignore": ["*", "!*.md", "!dist/*"]

@@ -113,11 +113,10 @@ function invoke(xs) {
 
 //
 
-function Combine() {
-  Property.call(this)
-}
 
-inherit(Combine, Property, {
+const Combine = /*#__PURE__*/inherit(function Combine() {
+  Property.call(this)
+}, Property, {
   _maybeEmitValue(next) {
     const prev = this._currentEvent
     if (!prev || !identicalU(prev.value, next))
@@ -127,14 +126,12 @@ inherit(Combine, Property, {
 
 //
 
-function CombineMany(template, n) {
+const CombineMany = /*#__PURE__*/inherit(function CombineMany(template, n) {
   Combine.call(this)
   this._template = template
   this._handlers = n
   this._values = null
-}
-
-inherit(CombineMany, Combine, {
+}, Combine, {
   _onActivation() {
     const template = this._template
     const n = this._handlers
@@ -189,13 +186,11 @@ inherit(CombineMany, Combine, {
 
 //
 
-function CombineOne(template) {
+const CombineOne = /*#__PURE__*/inherit(function CombineOne(template) {
   Combine.call(this)
   this._template = template
   this._handler = null
-}
-
-inherit(CombineOne, Combine, {
+}, Combine, {
   _onActivation() {
     const handler = e => this._handleAny(e)
     this._handler = handler
@@ -224,14 +219,12 @@ inherit(CombineOne, Combine, {
 
 //
 
-function CombineOneWith(observable, fn) {
+const CombineOneWith = /*#__PURE__*/inherit(function CombineOneWith(observable, fn) {
   Combine.call(this)
   this._observable = observable
   this._fn = fn
   this._handler = null
-}
-
-inherit(CombineOneWith, Combine, {
+}, Combine, {
   _onActivation() {
     const handler = e => this._handleAny(e)
     this._handler = handler
