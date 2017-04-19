@@ -51,24 +51,6 @@ function count(template) {
     return countTemplate(template)
 }
 
-function subscribe(template, handlers, self) {
-  let index = -1
-  forEach(template, observable => {
-    const handler = e => self._handleAny(handler, e)
-    handlers[++index] = handler
-    observable.onAny(handler)
-  })
-}
-
-function unsubscribe(template, handlers) {
-  let index = -1
-  forEach(template, observable => {
-    const handler = handlers[++index]
-    if (handler)
-      observable.offAny(handler)
-  })
-}
-
 function combine(template, values, state) {
   if (template instanceof Observable) {
     return values[++state.index]
@@ -111,29 +93,72 @@ function invoke(xs) {
     : xs
 }
 
+function subscribe(self) {
+  let index = -1
+  forEach(self._template, observable => {
+    const handler = e => {
+      const handlers = self._handlers
+      let i=0
+      while (handlers[i] !== handler)
+        ++i
+      switch (e.type) {
+        case "value": {
+          const values = self._values
+          values[i] = e.value
+          for (let j=0, n=values.length; j<n; ++j)
+            if (values[j] === self)
+              return
+          const template = self._template
+          maybeEmitValue(self, invoke(combine(template, values, {index: -1})))
+          break
+        }
+        case "error": {
+          self._emitError(e.value)
+          break
+        }
+        default: {
+          handlers[i] = null
+          for (let j=0, n=handlers.length; j<n; ++j)
+            if (handlers[j])
+              return
+          self._handlers = handlers.length
+          self._values = null
+          self._emitEnd()
+          break
+        }
+      }
+    }
+    self._handlers[++index] = handler
+    observable.onAny(handler)
+  })
+}
+
+function unsubscribe(template, handlers) {
+  let index = -1
+  forEach(template, observable => {
+    const handler = handlers[++index]
+    if (handler)
+      observable.offAny(handler)
+  })
+}
+
 //
 
-
-const Combine = /*#__PURE__*/inherit(function Combine() {
-  Property.call(this)
-}, Property, {
-  _maybeEmitValue(next) {
-    const prev = this._currentEvent
-    if (!prev || !identicalU(prev.value, next))
-      this._emitValue(next)
-  }
-})
+function maybeEmitValue(self, next) {
+  const prev = self._currentEvent
+  if (!prev || !identicalU(prev.value, next) || prev.type !== "value")
+    self._emitValue(next)
+}
 
 //
 
 const CombineMany = /*#__PURE__*/inherit(function CombineMany(template, n) {
-  Combine.call(this)
+  Property.call(this)
   this._template = template
   this._handlers = n
   this._values = null
-}, Combine, {
+}, Property, {
   _onActivation() {
-    const template = this._template
     const n = this._handlers
     const handlers = Array(n)
     const values = Array(n)
@@ -143,38 +168,7 @@ const CombineMany = /*#__PURE__*/inherit(function CombineMany(template, n) {
     }
     this._handlers = handlers
     this._values = values
-    subscribe(template, handlers, this)
-  },
-  _handleAny(handler, e) {
-    const handlers = this._handlers
-    let i=0
-    while (handlers[i] !== handler)
-      ++i
-    switch (e.type) {
-      case "value": {
-        const values = this._values
-        values[i] = e.value
-        for (let j=0, n=values.length; j<n; ++j)
-          if (values[j] === this)
-            return
-        this._maybeEmitValue(invoke(combine(this._template, values, {index: -1})))
-        break
-      }
-      case "error": {
-        this._emitError(e.value)
-        break
-      }
-      default: {
-        handlers[i] = null
-        for (let j=0, n=handlers.length; j<n; ++j)
-          if (handlers[j])
-            return
-        this._handlers = handlers.length
-        this._values = null
-        this._emitEnd()
-        break
-      }
-    }
+    subscribe(this)
   },
   _onDeactivation() {
     const handlers = this._handlers
@@ -187,28 +181,29 @@ const CombineMany = /*#__PURE__*/inherit(function CombineMany(template, n) {
 //
 
 const CombineOne = /*#__PURE__*/inherit(function CombineOne(template) {
-  Combine.call(this)
+  Property.call(this)
   this._template = template
   this._handler = null
-}, Combine, {
+}, Property, {
   _onActivation() {
-    const handler = e => this._handleAny(e)
+    const handler = e => {
+      switch (e.type) {
+        case "value": {
+          const template = this._template
+          maybeEmitValue(this, invoke(combine(template, [e.value], {index: -1})))
+          break
+        }
+        case "error":
+          this._emitError(e.value)
+          break
+        default:
+          this._handler = null
+          this._emitEnd()
+          break
+      }
+    }
     this._handler = handler
     forEach(this._template, observable => observable.onAny(handler))
-  },
-  _handleAny(e) {
-    switch (e.type) {
-      case "value":
-        this._maybeEmitValue(invoke(combine(this._template, [e.value], {index: -1})))
-        break
-      case "error":
-        this._emitError(e.value)
-        break
-      default:
-        this._handler = null
-        this._emitEnd()
-        break
-    }
   },
   _onDeactivation() {
     const {_handler} = this
@@ -220,29 +215,28 @@ const CombineOne = /*#__PURE__*/inherit(function CombineOne(template) {
 //
 
 const CombineOneWith = /*#__PURE__*/inherit(function CombineOneWith(observable, fn) {
-  Combine.call(this)
+  Property.call(this)
   this._observable = observable
   this._fn = fn
   this._handler = null
-}, Combine, {
+}, Property, {
   _onActivation() {
-    const handler = e => this._handleAny(e)
+    const handler = e => {
+      switch (e.type) {
+        case "value":
+          maybeEmitValue(this, (0,this._fn)(e.value))
+          break
+        case "error":
+          this._emitError(e.value)
+          break
+        default:
+          this._handler = null
+          this._emitEnd()
+          break
+      }
+    }
     this._handler = handler
     this._observable.onAny(handler)
-  },
-  _handleAny(e) {
-    switch (e.type) {
-      case "value":
-        this._maybeEmitValue(this._fn(e.value))
-        break
-      case "error":
-        this._emitError(e.value)
-        break
-      default:
-        this._handler = null
-        this._emitEnd()
-        break
-    }
   },
   _onDeactivation() {
     const {_handler, _observable} = this
