@@ -5,7 +5,10 @@ import uglify      from "rollup-plugin-uglify"
 
 export default {
   external: ["infestines", "kefir"],
-  globals: {"infestines": "I"},
+  globals: {
+    "infestines": "I",
+    "kefir": "Kefir"
+  },
   plugins: [
     process.env.NODE_ENV &&
       replace({"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)}),
