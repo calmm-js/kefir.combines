@@ -289,4 +289,5 @@ var kefir_combines = function () {
   }
 };
 
-export { lift1Shallow, lift1, lift };export default kefir_combines;
+export { lift1Shallow, lift1, lift };
+export default kefir_combines;

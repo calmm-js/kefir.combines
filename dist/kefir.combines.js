@@ -1,7 +1,7 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('kefir'), require('infestines')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'kefir', 'infestines'], factory) :
-	(factory((global.kefir = global.kefir || {}, global.kefir.combines = global.kefir.combines || {}),global.Kefir,global.I));
+	(factory((global.kefir = global.kefir || {}, global.kefir.combines = {}),global.Kefir,global.I));
 }(this, (function (exports,kefir,infestines) { 'use strict';
 
 //
