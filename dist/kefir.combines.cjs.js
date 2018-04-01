@@ -83,7 +83,7 @@ function subscribe(self) {
       while (handlers[i] !== handler) {
         ++i;
       }switch (e.type) {
-        case "value":
+        case 'value':
           {
             var values = self._values;
             values[i] = e.value;
@@ -93,7 +93,7 @@ function subscribe(self) {
             maybeEmitValue(self, invoke(combine(template, values, { index: -1 })));
             break;
           }
-        case "error":
+        case 'error':
           {
             self._emitError(e.value);
             break;
@@ -127,7 +127,7 @@ function unsubscribe(template, handlers) {
 
 function maybeEmitValue(self, next) {
   var prev = self._currentEvent;
-  if (!prev || !infestines.identicalU(prev.value, next) || prev.type !== "value") self._emitValue(next);
+  if (!prev || !infestines.identicalU(prev.value, next) || prev.type !== 'value') self._emitValue(next);
 }
 
 //
@@ -170,13 +170,13 @@ var CombineOne = /*#__PURE__*/infestines.inherit(function CombineOne(template) {
 
     var handler = function handler(e) {
       switch (e.type) {
-        case "value":
+        case 'value':
           {
             var template = _this._template;
             maybeEmitValue(_this, invoke(combine(template, [e.value], { index: -1 })));
             break;
           }
-        case "error":
+        case 'error':
           _this._emitError(e.value);
           break;
         default:
@@ -213,10 +213,10 @@ var CombineOneWith = /*#__PURE__*/infestines.inherit(function CombineOneWith(obs
 
     var handler = function handler(e) {
       switch (e.type) {
-        case "value":
+        case 'value':
           maybeEmitValue(_this2, (0, _this2._fn)(e.value));
           break;
-        case "error":
+        case 'error':
           _this2._emitError(e.value);
           break;
         default:
@@ -277,7 +277,7 @@ function lift(fn) {
   }
 }
 
-var kefir_combines = function () {
+function combines() {
   for (var _len = arguments.length, template = Array(_len), _key = 0; _key < _len; _key++) {
     template[_key] = arguments[_key];
   }
@@ -291,9 +291,10 @@ var kefir_combines = function () {
     default:
       return new CombineMany(template, n);
   }
-};
+}
 
 exports.lift1Shallow = lift1Shallow;
 exports.lift1 = lift1;
 exports.lift = lift;
-exports['default'] = kefir_combines;
+exports.combines = combines;
+exports.default = combines;
