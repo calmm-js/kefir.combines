@@ -1,7 +1,7 @@
 import {Observable, constant as C, constantError as E, later} from 'kefir'
 import * as R from 'ramda'
 
-import {combine, lift, lift1, lift1Shallow} from '../dist/kefir.combines.cjs'
+import {combines, lift, lift1, lift1Shallow} from '../dist/kefir.combines.cjs'
 
 function show(x) {
   switch (typeof x) {
@@ -42,32 +42,32 @@ const testEq = (expect, thunk) =>
     }
   })
 
-describe('combine', () => {
-  testEq([], () => combine())
+describe('combines', () => {
+  testEq([], () => combines())
 
-  testEq(['a'], () => combine('a'))
-  testEq(['a'], () => combine(C('a')))
+  testEq(['a'], () => combines('a'))
+  testEq(['a'], () => combines(C('a')))
 
-  testEq(['a', 'b'], () => combine('a', 'b'))
-  testEq(['a', 'b'], () => combine('a', C('b')))
-  testEq(['a', 'b'], () => combine(C('a'), 'b'))
-  testEq(['a', 'b'], () => combine(later(10, 'a'), later(2, 'b')))
+  testEq(['a', 'b'], () => combines('a', 'b'))
+  testEq(['a', 'b'], () => combines('a', C('b')))
+  testEq(['a', 'b'], () => combines(C('a'), 'b'))
+  testEq(['a', 'b'], () => combines(later(10, 'a'), later(2, 'b')))
 
-  testEq('aa', () => combine('a', x => x + x))
-  testEq('aa', () => combine(C('a'), x => x + x))
-  testEq('aa', () => combine(later(1, 'a'), x => x + x))
-  testEq('aa', () => combine(C('a'), C(x => x + x)))
+  testEq('aa', () => combines('a', x => x + x))
+  testEq('aa', () => combines(C('a'), x => x + x))
+  testEq('aa', () => combines(later(1, 'a'), x => x + x))
+  testEq('aa', () => combines(C('a'), C(x => x + x)))
 
   testEq([4, 1, {y: {z: 'x'}}, 3], () =>
-    combine([1, {y: {z: C('x')}}, C(3)], R.prepend(4))
+    combines([1, {y: {z: C('x')}}, C(3)], R.prepend(4))
   )
 
-  testEq('e', () => combine(E('e')))
-  testEq('e', () => combine(E('e'), x => x + x))
-  testEq('e', () => combine(C('f'), E('e')))
+  testEq('e', () => combines(E('e')))
+  testEq('e', () => combines(E('e'), x => x + x))
+  testEq('e', () => combines(C('f'), E('e')))
 
   testEq(true, () =>
-    combine(
+    combines(
       objectConstant,
       C(objectConstant),
       (o1, o2) => objectConstant === o1 && objectConstant === o2

@@ -41,14 +41,14 @@ function count(template) {
   else return countTemplate(template)
 }
 
-function combineTemplate(template, values, state) {
+function combine(template, values, state) {
   if (template instanceof Observable) {
     return values[++state.index]
   } else if (isArray(template)) {
     const n = template.length
     let next = template
     for (let i = 0; i < n; ++i) {
-      const v = combineTemplate(template[i], values, state)
+      const v = combine(template[i], values, state)
       if (!identicalU(next[i], v)) {
         if (next === template) next = template.slice(0)
         next[i] = v
@@ -58,7 +58,7 @@ function combineTemplate(template, values, state) {
   } else if (isObject(template)) {
     let next = template
     for (const k in template) {
-      const v = combineTemplate(template[k], values, state)
+      const v = combine(template[k], values, state)
       if (!identicalU(next[k], v)) {
         if (next === template) next = assocPartialU(void 0, void 0, template) // Avoid Object.assign
         next[k] = v
@@ -92,10 +92,7 @@ function subscribe(self) {
           for (let j = 0, n = values.length; j < n; ++j)
             if (values[j] === self) return
           const template = self._template
-          maybeEmitValue(
-            self,
-            invoke(combineTemplate(template, values, {index: -1}))
-          )
+          maybeEmitValue(self, invoke(combine(template, values, {index: -1})))
           break
         }
         case 'error': {
@@ -183,7 +180,7 @@ const CombineOne = inherit(
             const template = this._template
             maybeEmitValue(
               this,
-              invoke(combineTemplate(template, [e.value], {index: -1}))
+              invoke(combine(template, [e.value], {index: -1}))
             )
             break
           }
@@ -278,7 +275,7 @@ export function lift(fn) {
   }
 }
 
-export function combine(...template) {
+export function combines(...template) {
   const n = countArray(template)
   switch (n) {
     case 0:
@@ -294,4 +291,4 @@ export function combine(...template) {
   }
 }
 
-export default combine
+export default combines
