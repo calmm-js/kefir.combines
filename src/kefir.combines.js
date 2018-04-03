@@ -276,7 +276,7 @@ export function lift(fn) {
   }
 }
 
-export function combines(...template) {
+function combinesArray(template) {
   const n = countArray(template)
   switch (n) {
     case 0:
@@ -290,6 +290,53 @@ export function combines(...template) {
     default:
       return new CombineMany(template, n)
   }
+}
+
+export const combines = (...template) => combinesArray(template)
+
+function liftRecHelper() {
+  const n = arguments.length
+  const xs = Array(n + 1)
+  for (let i = 0; i < n; ++i) xs[i] = arguments[i]
+  xs[n] = this
+  return liftRec(combinesArray(xs))
+}
+
+export function liftRec(f) {
+  if (isFunction(f)) {
+    switch (f.length) {
+      case 0:
+        return function() {
+          return liftRecHelper.apply(f, arguments)
+        }
+      case 1:
+        return function(_1) {
+          return liftRecHelper.apply(f, arguments)
+        }
+      case 2:
+        return function(_1, _2) {
+          return liftRecHelper.apply(f, arguments)
+        }
+      case 3:
+        return function(_1, _2, _3) {
+          return liftRecHelper.apply(f, arguments)
+        }
+      case 4:
+        return function(_1, _2, _3, _4) {
+          return liftRecHelper.apply(f, arguments)
+        }
+      default:
+        return liftRecFail(f)
+    }
+  } else if (f instanceof Observable) {
+    return combines(f, liftRec)
+  } else {
+    return f
+  }
+}
+
+function liftRecFail(f) {
+  throw Error(`Arity of ${f} unsupported`)
 }
 
 export default combines

@@ -1,7 +1,13 @@
 import {Observable, constant as C, constantError as E, later} from 'kefir'
 import * as R from 'ramda'
 
-import {combines, lift, lift1, lift1Shallow} from '../dist/kefir.combines.cjs'
+import {
+  combines,
+  lift,
+  lift1,
+  lift1Shallow,
+  liftRec
+} from '../dist/kefir.combines.cjs'
 
 function show(x) {
   switch (typeof x) {
@@ -93,4 +99,43 @@ describe('lift', () => {
   testEq(5, () => lift(R.add)(2)(C(3)))
   testEq(5, () => lift(R.add)(C(3), 2))
   testEq([2, 3, 4], () => lift(R.map)(C(R.add(1)), [C(1), 2, C(3)]))
+})
+
+describe('liftRec', () => {
+  const __ = liftRec(R.__)
+  const add = liftRec(R.add)
+  const append = liftRec(R.append)
+  const apply = liftRec(R.apply)
+  const compose = liftRec(R.compose)
+  const equals = liftRec(R.equals)
+  const filter = liftRec(R.filter)
+  const flip = liftRec(R.flip)
+  const gt = liftRec(R.gt)
+  const modulo = liftRec(R.modulo)
+  const pipe = liftRec(R.pipe)
+  const propEq = liftRec(R.propEq)
+  const range = liftRec(R.range)
+  const take = liftRec(R.take)
+  const transduce = liftRec(R.transduce)
+
+  testEq(3, () => add(1)(C(2)))
+  testEq(3, () => add(C(1), C(2)))
+
+  testEq(-1, () => pipe(x => x - 1, x => -x)(C(2)))
+  testEq(-1, () => apply(pipe(add(C(-1)), x => -x), [C(2)]))
+  testEq(-1, () => apply(pipe(add(__, C(-1)), x => -x), [C(2)]))
+
+  testEq([1, 1], () => filter(gt(C(2)), C([3, 1, 4, 1])))
+  testEq([3, 4], () => filter(gt(__, C(2)), C([3, 1, 4, 1])))
+
+  testEq(true, () => propEq(C('x'), 10, {x: 10}))
+
+  testEq([1, 3, 5], () =>
+    transduce(
+      compose(filter(pipe(modulo(__, C(2)), equals(C(1)))), take(C(3))),
+      flip(append),
+      C([]),
+      range(0, C(100))
+    )
+  )
 })
