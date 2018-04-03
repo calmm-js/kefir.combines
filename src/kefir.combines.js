@@ -5,6 +5,7 @@ import {
   identicalU,
   inherit,
   isArray,
+  isFunction,
   isObject
 } from 'infestines'
 
@@ -71,11 +72,11 @@ function combine(template, values, state) {
 }
 
 function invoke(xs) {
-  if (!(xs instanceof Array)) return xs
+  if (!isArray(xs)) return xs
 
   const nm1 = xs.length - 1
   const f = xs[nm1]
-  return f instanceof Function ? f.apply(void 0, xs.slice(0, nm1)) : xs
+  return isFunction(f) ? f.apply(null, xs.slice(0, nm1)) : xs
 }
 
 function subscribe(self) {
