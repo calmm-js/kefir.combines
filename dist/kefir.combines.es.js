@@ -1,5 +1,5 @@
 import { Observable, Property } from 'kefir';
-import { arityN, assocPartialU, identicalU, inherit, isArray, isObject } from 'infestines';
+import { arityN, assocPartialU, identicalU, inherit, isArray, isFunction, isObject } from 'infestines';
 
 //
 
@@ -63,11 +63,11 @@ function combine(template, values, state) {
 }
 
 function invoke(xs) {
-  if (!(xs instanceof Array)) return xs;
+  if (!isArray(xs)) return xs;
 
   var nm1 = xs.length - 1;
   var f = xs[nm1];
-  return f instanceof Function ? f.apply(void 0, xs.slice(0, nm1)) : xs;
+  return isFunction(f) ? f.apply(null, xs.slice(0, nm1)) : xs;
 }
 
 function subscribe(self) {
@@ -273,11 +273,7 @@ function lift(fn) {
   }
 }
 
-function combines() {
-  for (var _len = arguments.length, template = Array(_len), _key = 0; _key < _len; _key++) {
-    template[_key] = arguments[_key];
-  }
-
+function combinesArray(template) {
   var n = countArray(template);
   switch (n) {
     case 0:
@@ -289,5 +285,59 @@ function combines() {
   }
 }
 
+var combines = function combines() {
+  for (var _len = arguments.length, template = Array(_len), _key = 0; _key < _len; _key++) {
+    template[_key] = arguments[_key];
+  }
+
+  return combinesArray(template);
+};
+
+function liftRecHelper() {
+  var n = arguments.length;
+  var xs = Array(n + 1);
+  for (var i = 0; i < n; ++i) {
+    xs[i] = arguments[i];
+  }xs[n] = this;
+  return liftRec(combinesArray(xs));
+}
+
+function liftRec(f) {
+  if (isFunction(f)) {
+    switch (f.length) {
+      case 0:
+        return function () {
+          return liftRecHelper.apply(f, arguments);
+        };
+      case 1:
+        return function (_1) {
+          return liftRecHelper.apply(f, arguments);
+        };
+      case 2:
+        return function (_1, _2) {
+          return liftRecHelper.apply(f, arguments);
+        };
+      case 3:
+        return function (_1, _2, _3) {
+          return liftRecHelper.apply(f, arguments);
+        };
+      case 4:
+        return function (_1, _2, _3, _4) {
+          return liftRecHelper.apply(f, arguments);
+        };
+      default:
+        return liftRecFail(f);
+    }
+  } else if (f instanceof Observable) {
+    return combines(f, liftRec);
+  } else {
+    return f;
+  }
+}
+
+function liftRecFail(f) {
+  throw Error('Arity of ' + f + ' unsupported');
+}
+
 export default combines;
-export { lift1Shallow, lift1, lift, combines };
+export { lift1Shallow, lift1, lift, combines, liftRec };
