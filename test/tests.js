@@ -30,7 +30,6 @@ const toExpr = f =>
     .replace(/function\s*(\([a-zA-Z0-9, ]*\))\s*/g, '$1 => ')
     .replace(/\(([^),]+)\) =>/, '$1 =>')
     .replace(/{\s*return\s*([^{;]+)\s*;\s*}/g, '$1')
-    .replace(/{\s*return\s*([^{;]+)\s*;\s*}/g, '$1')
     .replace(/\(0, [^.]*[.]([^)]*)\)/g, '$1')
 
 const testEq = (expect, thunk) =>

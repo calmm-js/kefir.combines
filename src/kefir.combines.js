@@ -1,21 +1,15 @@
 import {Observable, Property} from 'kefir'
-import {
-  arityN,
-  assocPartialU,
-  identicalU,
-  inherit,
-  isArray,
-  isFunction,
-  isObject
-} from 'infestines'
+import * as I from 'infestines'
 
 //
 
+const isObservable = x => x instanceof Observable
+
 function forEach(template, fn) {
-  if (template instanceof Observable) fn(template)
-  else if (isArray(template))
+  if (isObservable(template)) fn(template)
+  else if (I.isArray(template))
     for (let i = 0, n = template.length; i < n; ++i) forEach(template[i], fn)
-  else if (isObject(template))
+  else if (I.isObject(template))
     for (const k in template) forEach(template[k], fn)
 }
 
@@ -32,36 +26,36 @@ function countObject(template) {
 }
 
 function countTemplate(template) {
-  if (isArray(template)) return countArray(template)
-  else if (isObject(template)) return countObject(template)
+  if (I.isArray(template)) return countArray(template)
+  else if (I.isObject(template)) return countObject(template)
   else return 0
 }
 
 function count(template) {
-  if (template instanceof Observable) return 1
+  if (isObservable(template)) return 1
   else return countTemplate(template)
 }
 
 function combine(template, values, state) {
-  if (template instanceof Observable) {
+  if (isObservable(template)) {
     return values[++state.index]
-  } else if (isArray(template)) {
+  } else if (I.isArray(template)) {
     const n = template.length
     let next = template
     for (let i = 0; i < n; ++i) {
       const v = combine(template[i], values, state)
-      if (!identicalU(next[i], v)) {
+      if (!I.identicalU(next[i], v)) {
         if (next === template) next = template.slice(0)
         next[i] = v
       }
     }
     return next
-  } else if (isObject(template)) {
+  } else if (I.isObject(template)) {
     let next = template
     for (const k in template) {
       const v = combine(template[k], values, state)
-      if (!identicalU(next[k], v)) {
-        if (next === template) next = assocPartialU(void 0, void 0, template) // Avoid Object.assign
+      if (!I.identicalU(next[k], v)) {
+        if (next === template) next = I.assocPartialU(void 0, void 0, template) // Avoid Object.assign
         next[k] = v
       }
     }
@@ -72,11 +66,11 @@ function combine(template, values, state) {
 }
 
 function invoke(xs) {
-  if (!isArray(xs)) return xs
+  if (!I.isArray(xs)) return xs
 
   const nm1 = xs.length - 1
   const f = xs[nm1]
-  return isFunction(f) ? f.apply(null, xs.slice(0, nm1)) : xs
+  return I.isFunction(f) ? f.apply(null, xs.slice(0, nm1)) : xs
 }
 
 function subscribe(self) {
@@ -128,13 +122,13 @@ function unsubscribe(template, handlers) {
 
 function maybeEmitValue(self, next) {
   const prev = self._currentEvent
-  if (!prev || !identicalU(prev.value, next) || prev.type !== 'value')
+  if (!prev || !I.identicalU(prev.value, next) || prev.type !== 'value')
     self._emitValue(next)
 }
 
 //
 
-const CombineMany = inherit(
+const CombineMany = I.inherit(
   function CombineMany(template, n) {
     Property.call(this)
     this._template = template
@@ -166,7 +160,7 @@ const CombineMany = inherit(
 
 //
 
-const CombineOne = inherit(
+const CombineOne = I.inherit(
   function CombineOne(template) {
     Property.call(this)
     this._template = template
@@ -207,7 +201,7 @@ const CombineOne = inherit(
 
 //
 
-const CombineOneWith = inherit(
+const CombineOneWith = I.inherit(
   function CombineOneWith(observable, fn) {
     Property.call(this)
     this._observable = observable
@@ -245,10 +239,10 @@ const CombineOneWith = inherit(
 //
 
 export const lift1Shallow = fn => x =>
-  x instanceof Observable ? new CombineOneWith(x, fn) : fn(x)
+  isObservable(x) ? new CombineOneWith(x, fn) : fn(x)
 
 export const lift1 = fn => x => {
-  if (x instanceof Observable) return new CombineOneWith(x, fn)
+  if (isObservable(x)) return new CombineOneWith(x, fn)
   const n = countTemplate(x)
   if (0 === n) return fn(x)
   if (1 === n) return new CombineOne([x, fn])
@@ -263,9 +257,9 @@ export function lift(fn) {
     case 1:
       return lift1(fn)
     default:
-      return arityN(fnN, function() {
-        const xsN = arguments.length,
-          xs = Array(xsN)
+      return I.arityN(fnN, function() {
+        const xsN = arguments.length
+        const xs = Array(xsN)
         for (let i = 0; i < xsN; ++i) xs[i] = arguments[i]
         const n = countArray(xs)
         if (0 === n) return fn.apply(null, xs)
@@ -283,8 +277,8 @@ function combinesArray(template) {
       return invoke(template)
     case 1:
       return template.length === 2 &&
-        template[0] instanceof Observable &&
-        template[1] instanceof Function
+        isObservable(template[0]) &&
+        I.isFunction(template[1])
         ? new CombineOneWith(template[0], template[1])
         : new CombineOne(template)
     default:
@@ -303,7 +297,7 @@ function liftRecHelper() {
 }
 
 export function liftRec(f) {
-  if (isFunction(f)) {
+  if (I.isFunction(f)) {
     switch (f.length) {
       case 0:
         return function() {
@@ -328,7 +322,7 @@ export function liftRec(f) {
       default:
         return liftRecFail(f)
     }
-  } else if (f instanceof Observable) {
+  } else if (isObservable(f)) {
     return combines(f, liftRec)
   } else {
     return f
