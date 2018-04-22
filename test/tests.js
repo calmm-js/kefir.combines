@@ -137,4 +137,15 @@ describe('liftRec', () => {
       range(0, C(100))
     )
   )
+
+  it('Throws on unsupported arity', () => {
+    let raised
+    try {
+      liftRec((_1, _2, _3, _4, _5) => {})
+      raised = false
+    } catch (e) {
+      raised = true
+    }
+    if (!raised) throw Error('Expected to throw')
+  })
 })
