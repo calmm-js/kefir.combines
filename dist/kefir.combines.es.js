@@ -1,10 +1,14 @@
 import { Observable, Property } from 'kefir';
-import { arityN, assocPartialU, identicalU, inherit, isArray, isFunction, isObject } from 'infestines';
+import { isArray, isObject, identicalU, assocPartialU, isFunction, inherit, arityN } from 'infestines';
 
 //
 
+var isObservable = function isObservable(x) {
+  return x instanceof Observable;
+};
+
 function forEach(template, fn) {
-  if (template instanceof Observable) fn(template);else if (isArray(template)) for (var i = 0, n = template.length; i < n; ++i) {
+  if (isObservable(template)) fn(template);else if (isArray(template)) for (var i = 0, n = template.length; i < n; ++i) {
     forEach(template[i], fn);
   } else if (isObject(template)) for (var k in template) {
     forEach(template[k], fn);
@@ -30,11 +34,11 @@ function countTemplate(template) {
 }
 
 function count(template) {
-  if (template instanceof Observable) return 1;else return countTemplate(template);
+  if (isObservable(template)) return 1;else return countTemplate(template);
 }
 
 function combine(template, values, state) {
-  if (template instanceof Observable) {
+  if (isObservable(template)) {
     return values[++state.index];
   } else if (isArray(template)) {
     var n = template.length;
@@ -237,13 +241,13 @@ var CombineOneWith = /*#__PURE__*/inherit(function CombineOneWith(observable, fn
 
 var lift1Shallow = function lift1Shallow(fn) {
   return function (x) {
-    return x instanceof Observable ? new CombineOneWith(x, fn) : fn(x);
+    return isObservable(x) ? new CombineOneWith(x, fn) : fn(x);
   };
 };
 
 var lift1 = function lift1(fn) {
   return function (x) {
-    if (x instanceof Observable) return new CombineOneWith(x, fn);
+    if (isObservable(x)) return new CombineOneWith(x, fn);
     var n = countTemplate(x);
     if (0 === n) return fn(x);
     if (1 === n) return new CombineOne([x, fn]);
@@ -260,8 +264,8 @@ function lift(fn) {
       return lift1(fn);
     default:
       return arityN(fnN, function () {
-        var xsN = arguments.length,
-            xs = Array(xsN);
+        var xsN = arguments.length;
+        var xs = Array(xsN);
         for (var i = 0; i < xsN; ++i) {
           xs[i] = arguments[i];
         }var n = countArray(xs);
@@ -279,7 +283,7 @@ function combinesArray(template) {
     case 0:
       return invoke(template);
     case 1:
-      return template.length === 2 && template[0] instanceof Observable && template[1] instanceof Function ? new CombineOneWith(template[0], template[1]) : new CombineOne(template);
+      return template.length === 2 && isObservable(template[0]) && isFunction(template[1]) ? new CombineOneWith(template[0], template[1]) : new CombineOne(template);
     default:
       return new CombineMany(template, n);
   }
@@ -293,51 +297,59 @@ var combines = function combines() {
   return combinesArray(template);
 };
 
-function liftRecHelper() {
-  var n = arguments.length;
-  var xs = Array(n + 1);
-  for (var i = 0; i < n; ++i) {
-    xs[i] = arguments[i];
-  }xs[n] = this;
-  return liftRec(combinesArray(xs));
-}
-
-function liftRec(f) {
-  if (isFunction(f)) {
-    switch (f.length) {
-      case 0:
-        return function () {
-          return liftRecHelper.apply(f, arguments);
-        };
-      case 1:
-        return function (_1) {
-          return liftRecHelper.apply(f, arguments);
-        };
-      case 2:
-        return function (_1, _2) {
-          return liftRecHelper.apply(f, arguments);
-        };
-      case 3:
-        return function (_1, _2, _3) {
-          return liftRecHelper.apply(f, arguments);
-        };
-      case 4:
-        return function (_1, _2, _3, _4) {
-          return liftRecHelper.apply(f, arguments);
-        };
-      default:
-        return liftRecFail(f);
-    }
-  } else if (f instanceof Observable) {
-    return combines(f, liftRec);
-  } else {
-    return f;
-  }
-}
-
-function liftRecFail(f) {
+function liftFail(f) {
   throw Error('Arity of ' + f + ' unsupported');
 }
 
+function makeLift(stop) {
+  function helper() {
+    var n = arguments.length;
+    var xs = Array(n + 1);
+    for (var i = 0; i < n; ++i) {
+      xs[i] = arguments[i];
+    }xs[n] = this;
+    var r = combinesArray(xs);
+    return stop && this.length <= n ? r : liftRec(r);
+  }
+
+  function liftRec(f) {
+    if (isFunction(f)) {
+      switch (f.length) {
+        case 0:
+          return function () {
+            return helper.apply(f, arguments);
+          };
+        case 1:
+          return function (_1) {
+            return helper.apply(f, arguments);
+          };
+        case 2:
+          return function (_1, _2) {
+            return helper.apply(f, arguments);
+          };
+        case 3:
+          return function (_1, _2, _3) {
+            return helper.apply(f, arguments);
+          };
+        case 4:
+          return function (_1, _2, _3, _4) {
+            return helper.apply(f, arguments);
+          };
+        default:
+          return liftFail(f);
+      }
+    } else if (isObservable(f)) {
+      return combines(f, liftRec);
+    } else {
+      return f;
+    }
+  }
+
+  return liftRec;
+}
+
+var liftRec = /*#__PURE__*/makeLift(false);
+var liftFOF = /*#__PURE__*/makeLift(true);
+
 export default combines;
-export { lift1Shallow, lift1, lift, combines, liftRec };
+export { lift1Shallow, lift1, lift, combines, liftRec, liftFOF };

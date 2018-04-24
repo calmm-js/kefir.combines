@@ -2,14 +2,18 @@
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('kefir'), require('infestines')) :
   typeof define === 'function' && define.amd ? define(['exports', 'kefir', 'infestines'], factory) :
   (factory((global.Kefir = global.Kefir || {}, global.Kefir.combines = {}),global.Kefir,global.I));
-}(this, (function (exports,kefir,infestines) { 'use strict';
+}(this, (function (exports,kefir,I) { 'use strict';
 
   //
 
+  var isObservable = function isObservable(x) {
+    return x instanceof kefir.Observable;
+  };
+
   function forEach(template, fn) {
-    if (template instanceof kefir.Observable) fn(template);else if (infestines.isArray(template)) for (var i = 0, n = template.length; i < n; ++i) {
+    if (isObservable(template)) fn(template);else if (I.isArray(template)) for (var i = 0, n = template.length; i < n; ++i) {
       forEach(template[i], fn);
-    } else if (infestines.isObject(template)) for (var k in template) {
+    } else if (I.isObject(template)) for (var k in template) {
       forEach(template[k], fn);
     }
   }
@@ -29,33 +33,33 @@
   }
 
   function countTemplate(template) {
-    if (infestines.isArray(template)) return countArray(template);else if (infestines.isObject(template)) return countObject(template);else return 0;
+    if (I.isArray(template)) return countArray(template);else if (I.isObject(template)) return countObject(template);else return 0;
   }
 
   function count(template) {
-    if (template instanceof kefir.Observable) return 1;else return countTemplate(template);
+    if (isObservable(template)) return 1;else return countTemplate(template);
   }
 
   function combine(template, values, state) {
-    if (template instanceof kefir.Observable) {
+    if (isObservable(template)) {
       return values[++state.index];
-    } else if (infestines.isArray(template)) {
+    } else if (I.isArray(template)) {
       var n = template.length;
       var next = template;
       for (var i = 0; i < n; ++i) {
         var v = combine(template[i], values, state);
-        if (!infestines.identicalU(next[i], v)) {
+        if (!I.identicalU(next[i], v)) {
           if (next === template) next = template.slice(0);
           next[i] = v;
         }
       }
       return next;
-    } else if (infestines.isObject(template)) {
+    } else if (I.isObject(template)) {
       var _next = template;
       for (var k in template) {
         var _v = combine(template[k], values, state);
-        if (!infestines.identicalU(_next[k], _v)) {
-          if (_next === template) _next = infestines.assocPartialU(void 0, void 0, template); // Avoid Object.assign
+        if (!I.identicalU(_next[k], _v)) {
+          if (_next === template) _next = I.assocPartialU(void 0, void 0, template); // Avoid Object.assign
           _next[k] = _v;
         }
       }
@@ -66,11 +70,11 @@
   }
 
   function invoke(xs) {
-    if (!infestines.isArray(xs)) return xs;
+    if (!I.isArray(xs)) return xs;
 
     var nm1 = xs.length - 1;
     var f = xs[nm1];
-    return infestines.isFunction(f) ? f.apply(null, xs.slice(0, nm1)) : xs;
+    return I.isFunction(f) ? f.apply(null, xs.slice(0, nm1)) : xs;
   }
 
   function subscribe(self) {
@@ -126,12 +130,12 @@
 
   function maybeEmitValue(self, next) {
     var prev = self._currentEvent;
-    if (!prev || !infestines.identicalU(prev.value, next) || prev.type !== 'value') self._emitValue(next);
+    if (!prev || !I.identicalU(prev.value, next) || prev.type !== 'value') self._emitValue(next);
   }
 
   //
 
-  var CombineMany = /*#__PURE__*/infestines.inherit(function CombineMany(template, n) {
+  var CombineMany = /*#__PURE__*/I.inherit(function CombineMany(template, n) {
     kefir.Property.call(this);
     this._template = template;
     this._handlers = n;
@@ -159,7 +163,7 @@
 
   //
 
-  var CombineOne = /*#__PURE__*/infestines.inherit(function CombineOne(template) {
+  var CombineOne = /*#__PURE__*/I.inherit(function CombineOne(template) {
     kefir.Property.call(this);
     this._template = template;
     this._handler = null;
@@ -201,7 +205,7 @@
 
   //
 
-  var CombineOneWith = /*#__PURE__*/infestines.inherit(function CombineOneWith(observable, fn) {
+  var CombineOneWith = /*#__PURE__*/I.inherit(function CombineOneWith(observable, fn) {
     kefir.Property.call(this);
     this._observable = observable;
     this._fn = fn;
@@ -240,13 +244,13 @@
 
   var lift1Shallow = function lift1Shallow(fn) {
     return function (x) {
-      return x instanceof kefir.Observable ? new CombineOneWith(x, fn) : fn(x);
+      return isObservable(x) ? new CombineOneWith(x, fn) : fn(x);
     };
   };
 
   var lift1 = function lift1(fn) {
     return function (x) {
-      if (x instanceof kefir.Observable) return new CombineOneWith(x, fn);
+      if (isObservable(x)) return new CombineOneWith(x, fn);
       var n = countTemplate(x);
       if (0 === n) return fn(x);
       if (1 === n) return new CombineOne([x, fn]);
@@ -262,9 +266,9 @@
       case 1:
         return lift1(fn);
       default:
-        return infestines.arityN(fnN, function () {
-          var xsN = arguments.length,
-              xs = Array(xsN);
+        return I.arityN(fnN, function () {
+          var xsN = arguments.length;
+          var xs = Array(xsN);
           for (var i = 0; i < xsN; ++i) {
             xs[i] = arguments[i];
           }var n = countArray(xs);
@@ -282,7 +286,7 @@
       case 0:
         return invoke(template);
       case 1:
-        return template.length === 2 && template[0] instanceof kefir.Observable && template[1] instanceof Function ? new CombineOneWith(template[0], template[1]) : new CombineOne(template);
+        return template.length === 2 && isObservable(template[0]) && I.isFunction(template[1]) ? new CombineOneWith(template[0], template[1]) : new CombineOne(template);
       default:
         return new CombineMany(template, n);
     }
@@ -296,57 +300,66 @@
     return combinesArray(template);
   };
 
-  function liftRecHelper() {
-    var n = arguments.length;
-    var xs = Array(n + 1);
-    for (var i = 0; i < n; ++i) {
-      xs[i] = arguments[i];
-    }xs[n] = this;
-    return liftRec(combinesArray(xs));
-  }
-
-  function liftRec(f) {
-    if (infestines.isFunction(f)) {
-      switch (f.length) {
-        case 0:
-          return function () {
-            return liftRecHelper.apply(f, arguments);
-          };
-        case 1:
-          return function (_1) {
-            return liftRecHelper.apply(f, arguments);
-          };
-        case 2:
-          return function (_1, _2) {
-            return liftRecHelper.apply(f, arguments);
-          };
-        case 3:
-          return function (_1, _2, _3) {
-            return liftRecHelper.apply(f, arguments);
-          };
-        case 4:
-          return function (_1, _2, _3, _4) {
-            return liftRecHelper.apply(f, arguments);
-          };
-        default:
-          return liftRecFail(f);
-      }
-    } else if (f instanceof kefir.Observable) {
-      return combines(f, liftRec);
-    } else {
-      return f;
-    }
-  }
-
-  function liftRecFail(f) {
+  function liftFail(f) {
     throw Error('Arity of ' + f + ' unsupported');
   }
+
+  function makeLift(stop) {
+    function helper() {
+      var n = arguments.length;
+      var xs = Array(n + 1);
+      for (var i = 0; i < n; ++i) {
+        xs[i] = arguments[i];
+      }xs[n] = this;
+      var r = combinesArray(xs);
+      return stop && this.length <= n ? r : liftRec(r);
+    }
+
+    function liftRec(f) {
+      if (I.isFunction(f)) {
+        switch (f.length) {
+          case 0:
+            return function () {
+              return helper.apply(f, arguments);
+            };
+          case 1:
+            return function (_1) {
+              return helper.apply(f, arguments);
+            };
+          case 2:
+            return function (_1, _2) {
+              return helper.apply(f, arguments);
+            };
+          case 3:
+            return function (_1, _2, _3) {
+              return helper.apply(f, arguments);
+            };
+          case 4:
+            return function (_1, _2, _3, _4) {
+              return helper.apply(f, arguments);
+            };
+          default:
+            return liftFail(f);
+        }
+      } else if (isObservable(f)) {
+        return combines(f, liftRec);
+      } else {
+        return f;
+      }
+    }
+
+    return liftRec;
+  }
+
+  var liftRec = /*#__PURE__*/makeLift(false);
+  var liftFOF = /*#__PURE__*/makeLift(true);
 
   exports.lift1Shallow = lift1Shallow;
   exports.lift1 = lift1;
   exports.lift = lift;
   exports.combines = combines;
   exports.liftRec = liftRec;
+  exports.liftFOF = liftFOF;
   exports.default = combines;
 
   Object.defineProperty(exports, '__esModule', { value: true });
