@@ -288,49 +288,57 @@ function combinesArray(template) {
 
 export const combines = (...template) => combinesArray(template)
 
-function liftRecHelper() {
-  const n = arguments.length
-  const xs = Array(n + 1)
-  for (let i = 0; i < n; ++i) xs[i] = arguments[i]
-  xs[n] = this
-  return liftRec(combinesArray(xs))
-}
-
-export function liftRec(f) {
-  if (I.isFunction(f)) {
-    switch (f.length) {
-      case 0:
-        return function() {
-          return liftRecHelper.apply(f, arguments)
-        }
-      case 1:
-        return function(_1) {
-          return liftRecHelper.apply(f, arguments)
-        }
-      case 2:
-        return function(_1, _2) {
-          return liftRecHelper.apply(f, arguments)
-        }
-      case 3:
-        return function(_1, _2, _3) {
-          return liftRecHelper.apply(f, arguments)
-        }
-      case 4:
-        return function(_1, _2, _3, _4) {
-          return liftRecHelper.apply(f, arguments)
-        }
-      default:
-        return liftRecFail(f)
-    }
-  } else if (isObservable(f)) {
-    return combines(f, liftRec)
-  } else {
-    return f
-  }
-}
-
-function liftRecFail(f) {
+function liftFail(f) {
   throw Error(`Arity of ${f} unsupported`)
 }
+
+function makeLift(stop) {
+  function helper() {
+    const n = arguments.length
+    const xs = Array(n + 1)
+    for (let i = 0; i < n; ++i) xs[i] = arguments[i]
+    xs[n] = this
+    const r = combinesArray(xs)
+    return stop && this.length <= n ? r : liftRec(r)
+  }
+
+  function liftRec(f) {
+    if (I.isFunction(f)) {
+      switch (f.length) {
+        case 0:
+          return function() {
+            return helper.apply(f, arguments)
+          }
+        case 1:
+          return function(_1) {
+            return helper.apply(f, arguments)
+          }
+        case 2:
+          return function(_1, _2) {
+            return helper.apply(f, arguments)
+          }
+        case 3:
+          return function(_1, _2, _3) {
+            return helper.apply(f, arguments)
+          }
+        case 4:
+          return function(_1, _2, _3, _4) {
+            return helper.apply(f, arguments)
+          }
+        default:
+          return liftFail(f)
+      }
+    } else if (isObservable(f)) {
+      return combines(f, liftRec)
+    } else {
+      return f
+    }
+  }
+
+  return liftRec
+}
+
+export const liftRec = makeLift(false)
+export const liftFOF = makeLift(true)
 
 export default combines

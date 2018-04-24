@@ -1,6 +1,6 @@
 {
   "name": "kefir.combines",
-  "version": "4.3.0",
+  "version": "4.4.0",
   "description": "Special purpose applicative Kefir combinator",
   "main": "dist/kefir.combines.cjs.js",
   "module": "dist/kefir.combines.es.js",
@@ -40,6 +40,7 @@
     "kefir": "^3.8.3",
     "mocha": "^5.1.1",
     "nyc": "^11.7.1",
+    "partial.lenses": "^13.10.0",
     "ramda": "^0.25.0",
     "rollup": "^0.58.1",
     "rollup-plugin-babel": "^3.0.3",
