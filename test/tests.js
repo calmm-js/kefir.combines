@@ -1,11 +1,13 @@
 import {Observable, constant as C, constantError as E, later} from 'kefir'
 import * as R from 'ramda'
+import * as L from 'partial.lenses'
 
 import {
   combines,
   lift,
   lift1,
   lift1Shallow,
+  liftFOF,
   liftRec
 } from '../dist/kefir.combines.cjs'
 
@@ -98,6 +100,20 @@ describe('lift', () => {
   testEq(5, () => lift(R.add)(2)(C(3)))
   testEq(5, () => lift(R.add)(C(3), 2))
   testEq([2, 3, 4], () => lift(R.map)(C(R.add(1)), [C(1), 2, C(3)]))
+})
+
+describe('liftFOF', () => {
+  const get = liftFOF(L.get)
+  const apply = liftRec(R.apply)
+
+  testEq(101, () => get(C('x'), C({x: 101})))
+
+  testEq(101, () => apply(get(C('x')), [C({x: 101})]))
+
+  testEq(true, () => {
+    const x = C(101)
+    return get('x', C({x})).map(r => r === x)
+  })
 })
 
 describe('liftRec', () => {
