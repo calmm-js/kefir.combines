@@ -335,7 +335,11 @@ function makeLift(stop) {
     }
   }
 
-  return liftRec
+  return fn => {
+    const lifted = liftRec(fn)
+    if (lifted !== fn) lifted.fn = fn
+    return lifted
+  }
 }
 
 export const liftRec = makeLift(false)

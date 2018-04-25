@@ -114,6 +114,8 @@ describe('liftFOF', () => {
     const x = C(101)
     return get('x', C({x})).map(r => r === x)
   })
+
+  testEq(true, () => L.get === get.fn)
 })
 
 describe('liftRec', () => {
@@ -132,6 +134,8 @@ describe('liftRec', () => {
   const range = liftRec(R.range)
   const take = liftRec(R.take)
   const transduce = liftRec(R.transduce)
+
+  testEq(true, () => R.add === add.fn)
 
   testEq(3, () => add(1)(C(2)))
   testEq(3, () => add(C(1), C(2)))
