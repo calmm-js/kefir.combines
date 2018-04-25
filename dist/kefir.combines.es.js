@@ -345,7 +345,11 @@ function makeLift(stop) {
     }
   }
 
-  return liftRec;
+  return function (fn) {
+    var lifted = liftRec(fn);
+    if (lifted !== fn) lifted.fn = fn;
+    return lifted;
+  };
 }
 
 var liftRec = /*#__PURE__*/makeLift(false);
