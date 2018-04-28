@@ -4,6 +4,7 @@
   "description": "Special purpose applicative Kefir combinator",
   "main": "dist/kefir.combines.cjs.js",
   "module": "dist/kefir.combines.es.js",
+  "sideEffects": false,
   "scripts": {
     "dist": "rollup -c",
     "lint": "eslint src test",
