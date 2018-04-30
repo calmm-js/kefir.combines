@@ -5,6 +5,9 @@
 [![](https://david-dm.org/calmm-js/kefir.combines.svg)](https://david-dm.org/calmm-js/kefir.combines)
 [![](https://david-dm.org/calmm-js/kefir.combines/dev-status.svg)](https://david-dm.org/calmm-js/kefir.combines?type=dev)
 
+**WARNING: This library has been superseded by the [Karet
+Lift](https://github.com/calmm-js/karet.lift) library.**
+
 The default export of this library
 
 ```js
